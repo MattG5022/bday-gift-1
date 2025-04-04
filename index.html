@@ -240,9 +240,13 @@
                 opacity: 0;
             }
         }
-    </style><!-- ... (existing head content remains the same) ... -->
+    </style>
 </head>
 <body>
+    <audio id="bgMusic" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
+    
     <!-- Add Initial Pop-up Modal -->
     <div id="initialPopup" class="modal">
         <div class="modal-content">
@@ -339,13 +343,9 @@
         </div>
     </div>
     
-    <div class="animations" id="animations"></div><!-- ... (existing body content remains the same) ... -->
-    </div>
-
-    <!-- ... (existing modals remain the same) ... -->
+    <div class="animations" id="animations"></div>
 
     <script>
-        // Modified Game State
         const gameState = {
             coins: 100,
             level: 1,
@@ -356,7 +356,8 @@
             farm: [],
             growthSpeedMultiplier: 1,
             lastDailyBonus: null,
-            streak: 1
+            streak: 1,
+            musicPlaying: false
         };
         
         // DOM Elements
@@ -375,122 +376,140 @@
         const streakDayElement = document.getElementById('streakDay');
         const claimDailyBonusBtn = document.getElementById('claimDailyBonusBtn');
         const animationsContainer = document.getElementById('animations');
+        const bgMusic = document.getElementById('bgMusic');
+        
         // Initialize farm
-function initializeFarm() {
-    farmElement.innerHTML = '';
-    gameState.farm = [];
-    
-    // Create plots
-    for (let i = 0; i < gameState.plots; i++) {
-        const plot = {
-            id: i,
-            status: 'empty',
-            crop: null,
-            plantTime: null,
-            harvestTime: null,
-            element: null
-        };
-        
-        gameState.farm.push(plot);
-        
-        const plotElement = document.createElement('div');
-        plotElement.className = 'plot';
-        plotElement.dataset.id = i;
-        plotElement.addEventListener('click', () => handlePlotClick(i));
-        
-        plotElement.innerHTML = `
-            <div class="crop-icon">🟤</div>
-            <div class="crop-timer"></div>
-            <div class="progress-container">
-                <div class="progress-bar"></div>
-            </div>
-        `;
-        
-        plot.element = plotElement;
-        farmElement.appendChild(plotElement);
-    }
-    
-    // Add empty plots to show locked plots
-    for (let i = gameState.plots; i < 9; i++) {
-        const lockedPlot = document.createElement('div');
-        lockedPlot.className = 'plot';
-        lockedPlot.style.opacity = '0.5';
-        lockedPlot.innerHTML = `
-            <div class="crop-icon">🔒</div>
-        `;
-        farmElement.appendChild(lockedPlot);
-    }
-    
-    updateUI();
-}
-        // Modified Initialize Game Function
-        // Initialize game
-function initializeGame() {
-    // Show initial pop-up
-    document.getElementById('initialPopup').style.display = 'block';
-
-    // Set up shop items
-    document.querySelectorAll('.shop-item').forEach(item => {
-        item.addEventListener('click', () => {
-            // Only select if not disabled
-            if (!item.classList.contains('disabled')) {
-                // Remove selected from all items
-                document.querySelectorAll('.shop-item').forEach(i => i.style.border = 'none');
+        function initializeFarm() {
+            farmElement.innerHTML = '';
+            gameState.farm = [];
+            
+            // Create plots
+            for (let i = 0; i < gameState.plots; i++) {
+                const plot = {
+                    id: i,
+                    status: 'empty',
+                    crop: null,
+                    plantTime: null,
+                    harvestTime: null,
+                    element: null
+                };
                 
-                // Select this item
-                item.style.border = '2px solid blue';
-                gameState.selectedCrop = item.dataset.crop;
+                gameState.farm.push(plot);
+                
+                const plotElement = document.createElement('div');
+                plotElement.className = 'plot';
+                plotElement.dataset.id = i;
+                plotElement.addEventListener('click', () => handlePlotClick(i));
+                
+                plotElement.innerHTML = `
+                    <div class="crop-icon">🟤</div>
+                    <div class="crop-timer"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar"></div>
+                    </div>
+                `;
+                
+                plot.element = plotElement;
+                farmElement.appendChild(plotElement);
             }
-        });
-    });
-    
-    // Set up buttons
-    unlockPlotBtn.addEventListener('click', unlockNewPlot);
-    upgradeLevelBtn.addEventListener('click', upgradeLevel);
-    refreshEnergyBtn.addEventListener('click', refreshEnergy);
-    claimLevelRewardBtn.addEventListener('click', claimLevelRewards);
-    dailyBonusElement.addEventListener('click', showDailyBonus);
-    claimDailyBonusBtn.addEventListener('click', claimDailyBonus);
-    
-    // Close modals when clicking on X
-    document.querySelectorAll('.close').forEach(closeBtn => {
-        closeBtn.addEventListener('click', () => {
-            levelUpModal.style.display = 'none';
-            dailyBonusModal.style.display = 'none';
-            document.getElementById('initialPopup').style.display = 'none';
-        });
-    });
-    
-    // Close modals when clicking outside
-    window.addEventListener('click', (event) => {
-        if (event.target === levelUpModal) {
-            levelUpModal.style.display = 'none';
-        }
-        if (event.target === dailyBonusModal) {
-            dailyBonusModal.style.display = 'none';
-        }
-        if (event.target === document.getElementById('initialPopup')) {
-            document.getElementById('initialPopup').style.display = 'none';
-        }
-    });
-    
-    // Initialize farm
-    initializeFarm();
-    
-    // Auto-regenerate energy
-    setInterval(() => {
-        if (gameState.energy < gameState.maxEnergy) {
-            gameState.energy += 1;
+            
+            // Add empty plots to show locked plots
+            for (let i = gameState.plots; i < 9; i++) {
+                const lockedPlot = document.createElement('div');
+                lockedPlot.className = 'plot';
+                lockedPlot.style.opacity = '0.5';
+                lockedPlot.innerHTML = `
+                    <div class="crop-icon">🔒</div>
+                `;
+                farmElement.appendChild(lockedPlot);
+            }
+            
             updateUI();
         }
-    }, 60000); // 1 minute
-    
-    // Load game state from local storage
-    loadGame();
-    
-    // Save game state periodically
-    setInterval(saveGame, 10000); // 10 seconds
-}
+        
+        // Initialize game
+        function initializeGame() {
+            // Show initial pop-up
+            document.getElementById('initialPopup').style.display = 'block';
+
+            // Set up shop items
+            document.querySelectorAll('.shop-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    // Only select if not disabled
+                    if (!item.classList.contains('disabled')) {
+                        // Remove selected from all items
+                        document.querySelectorAll('.shop-item').forEach(i => i.style.border = 'none');
+                        
+                        // Select this item
+                        item.style.border = '2px solid blue';
+                        gameState.selectedCrop = item.dataset.crop;
+                        
+                        // Try to play music
+                        if (!gameState.musicPlaying) {
+                            bgMusic.volume = 0.3; // 30% volume
+                            
+                            const playPromise = bgMusic.play();
+                            
+                            if (playPromise !== undefined) {
+                                playPromise.then(() => {
+                                    gameState.musicPlaying = true;
+                                }).catch(error => {
+                                    // Autoplay was prevented
+                                    gameState.musicPlaying = false;
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Set up buttons
+            unlockPlotBtn.addEventListener('click', unlockNewPlot);
+            upgradeLevelBtn.addEventListener('click', upgradeLevel);
+            refreshEnergyBtn.addEventListener('click', refreshEnergy);
+            claimLevelRewardBtn.addEventListener('click', claimLevelRewards);
+            dailyBonusElement.addEventListener('click', showDailyBonus);
+            claimDailyBonusBtn.addEventListener('click', claimDailyBonus);
+            
+            // Close modals when clicking on X
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', () => {
+                    levelUpModal.style.display = 'none';
+                    dailyBonusModal.style.display = 'none';
+                    document.getElementById('initialPopup').style.display = 'none';
+                });
+            });
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === levelUpModal) {
+                    levelUpModal.style.display = 'none';
+                }
+                if (event.target === dailyBonusModal) {
+                    dailyBonusModal.style.display = 'none';
+                }
+                if (event.target === document.getElementById('initialPopup')) {
+                    document.getElementById('initialPopup').style.display = 'none';
+                }
+            });
+            
+            // Initialize farm
+            initializeFarm();
+            
+            // Auto-regenerate energy
+            setInterval(() => {
+                if (gameState.energy < gameState.maxEnergy) {
+                    gameState.energy += 1;
+                    updateUI();
+                }
+            }, 60000); // 1 minute
+            
+            // Load game state from local storage
+            loadGame();
+            
+            // Save game state periodically
+            setInterval(saveGame, 10000); // 10 seconds
+        }
         
         // Handle plot click
         function handlePlotClick(plotId) {
@@ -688,23 +707,22 @@ function initializeGame() {
         }
         
         // Upgrade level
-        // Upgrade level
-function upgradeLevel() {
-    if (gameState.coins >= 100) {
-        gameState.coins -= 100;
-        gameState.level += 1;
-        
-        // Check for level 10 redirect
-        if (gameState.level >= 10) {
-            window.location.href = 'https://mattg5022.github.io/bday-gift/';
-            return;
+        function upgradeLevel() {
+            if (gameState.coins >= 100) {
+                gameState.coins -= 100;
+                gameState.level += 1;
+                
+                // Check for level 10 redirect
+                if (gameState.level >= 10) {
+                    window.location.href = 'https://mattg5022.github.io/bday-gift/';
+                    return;
+                }
+                
+                // Show level up modal
+                newLevelElement.textContent = gameState.level;
+                levelUpModal.style.display = 'block';
+            }
         }
-        
-        // Show level up modal
-        newLevelElement.textContent = gameState.level;
-        levelUpModal.style.display = 'block';
-    }
-}
         
         // Claim level rewards
         function claimLevelRewards() {
@@ -804,10 +822,6 @@ function upgradeLevel() {
             updateUI();
         }
         
-        // Initialize game
-    
-           
-        
         // Save game state
         function saveGame() {
             const saveData = JSON.stringify({
@@ -825,70 +839,34 @@ function upgradeLevel() {
         }
         
         // Load game state
-        // Load game state
-function loadGame() {
-    const saveData = localStorage.getItem('farmGame');
-    
-    if (saveData) {
-        const data = JSON.parse(saveData);
-        
-        gameState.coins = data.coins || 100;
-        gameState.level = data.level || 1;
-        gameState.energy = data.energy || 10;
-        gameState.maxEnergy = data.maxEnergy || 10;
-        gameState.plots = data.plots || 4;
-        gameState.growthSpeedMultiplier = data.growthSpeedMultiplier || 1;
-        gameState.lastDailyBonus = data.lastDailyBonus || null;
-        gameState.streak = data.streak || 1;
-        
-        // Check for existing level 10
-        if (gameState.level >= 10) {
-            window.location.href = 'https://mattg5022.github.io/bday-gift/';
-            return;
-        }
-        
-        initializeFarm();
-        updateUI();
-    }
-}
-        // Modified Upgrade Level Function
-        function upgradeLevel() {
-            if (gameState.coins >= 100) {
-                gameState.coins -= 100;
-                gameState.level += 1;
-
-                // Check for level 10 redirect
-                if (gameState.level >= 10) {
-                    window.location.href = 'https://mattg5022.github.io/bday-gift/';
-                    return;
-                }
-
-                // ... (rest of existing upgradeLevel code remains the same) ...
-            }
-        }
-
-        // Modified Load Game Function
         function loadGame() {
             const saveData = localStorage.getItem('farmGame');
             
             if (saveData) {
                 const data = JSON.parse(saveData);
                 
+                gameState.coins = data.coins || 100;
                 gameState.level = data.level || 1;
-
+                gameState.energy = data.energy || 10;
+                gameState.maxEnergy = data.maxEnergy || 10;
+                gameState.plots = data.plots || 4;
+                gameState.growthSpeedMultiplier = data.growthSpeedMultiplier || 1;
+                gameState.lastDailyBonus = data.lastDailyBonus || null;
+                gameState.streak = data.streak || 1;
+                
                 // Check for existing level 10
                 if (gameState.level >= 10) {
                     window.location.href = 'https://mattg5022.github.io/bday-gift/';
                     return;
                 }
-
-                // ... (rest of existing loadGame code remains the same) ...
+                
+                initializeFarm();
+                updateUI();
             }
         }
+        
         // Start the game when page loads
-// Start the game when page loads
-window.addEventListener('DOMContentLoaded', initializeGame);
-        // ... (rest of existing code remains the same) ...
+        window.addEventListener('DOMContentLoaded', initializeGame);
     </script>
 </body>
 </html>
