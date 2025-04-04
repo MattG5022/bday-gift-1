@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmland Game Clone</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #87CEEB;
+            color: #333;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #8B4513;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background-color: #FFFACD;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .farm {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .plot {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #8B4513;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .plot.planted {
+            background-color: #228B22;
+        }
+        
+        .plot.ready {
+            background-color: #FFD700;
+        }
+        
+        .crop-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .crop-timer {
+            font-size: 12px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 2px 5px;
+            border-radius: 10px;
+        }
+        
+        .shop {
+            background-color: #FFFACD;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .shop-items {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .shop-item {
+            background-color: #F5F5DC;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .shop-item:hover {
+            transform: scale(1.05);
+        }
+        
+        .shop-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        .btn:hover {
+            background-color: #45a049;
+        }
+        
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .upgrade-btn {
+            background-color: #FF8C00;
+        }
+        
+        .upgrade-btn:hover {
+            background-color: #FF7F00;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #FFFACD;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #ddd;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            width: 0%;
+        }
+        
+        .daily-bonus {
+            background-color: #FF6347;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .daily-bonus:hover {
+            background-color: #FF4500;
+        }
+        
+        .animations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        .coin-animation {
+            position: absolute;
+            font-size: 24px;
+            color: gold;
+            animation: flyUp 1s ease-out forwards;
+        }
+        
+        @keyframes flyUp {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+        }
+    </style><!-- ... (existing head content remains the same) ... -->
+</head>
+<body>
+    <!-- Add Initial Pop-up Modal -->
+    <div id="initialPopup" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Before You Can Reveal Your Gifts...</h2>
+            <p>You must reach level 10 of Farmland. Get watering!</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Farmland Game Clone</h1>
+        
+        <div class="stats">
+            <div class="stat">
+                <span>💰 Coins</span>
+                <span id="coins">100</span>
+            </div>
+            <div class="stat">
+                <span>🏆 Level</span>
+                <span id="level">1</span>
+            </div>
+            <div class="stat">
+                <span>⚡ Energy</span>
+                <span id="energy">10/10</span>
+            </div>
+        </div>
+        
+        <div class="daily-bonus" id="dailyBonus">
+            <h3>Daily Bonus Available! 🎁</h3>
+            <p>Tap to claim your rewards!</p>
+        </div>
+        
+        <div class="farm" id="farm">
+            <!-- Farm plots will be generated here -->
+        </div>
+        
+        <div class="shop">
+            <h2>Shop</h2>
+            <div class="shop-items">
+                <div class="shop-item" data-crop="carrot" data-cost="10" data-growth="5" data-reward="20">
+                    <div>🥕 Carrot</div>
+                    <div>Cost: 10 💰</div>
+                    <div>Time: 5s</div>
+                    <div>Reward: 20 💰</div>
+                </div>
+                <div class="shop-item" data-crop="tomato" data-cost="25" data-growth="10" data-reward="55">
+                    <div>🍅 Tomato</div>
+                    <div>Cost: 25 💰</div>
+                    <div>Time: 10s</div>
+                    <div>Reward: 55 💰</div>
+                </div>
+                <div class="shop-item" data-crop="corn" data-cost="50" data-growth="15" data-reward="120">
+                    <div>🌽 Corn</div>
+                    <div>Cost: 50 💰</div>
+                    <div>Time: 15s</div>
+                    <div>Reward: 120 💰</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn upgrade-btn" id="unlockPlotBtn">Unlock New Plot (50 💰)</button>
+        <button class="btn upgrade-btn" id="upgradeLevelBtn">Upgrade Level (100 💰)</button>
+        <button class="btn" id="refreshEnergyBtn">Refresh Energy (20 💰)</button>
+    </div>
+    
+    <div id="levelUpModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Level Up! 🎉</h2>
+            <p>Congratulations! You've reached level <span id="newLevel">2</span>!</p>
+            <p>Rewards:</p>
+            <ul>
+                <li>+50 Coins</li>
+                <li>+2 Energy Capacity</li>
+                <li>+20% Crop Growth Speed</li>
+            </ul>
+            <button class="btn" id="claimLevelRewardBtn">Claim Rewards</button>
+        </div>
+    </div>
+    
+    <div id="dailyBonusModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Daily Bonus! 🎁</h2>
+            <p>Day <span id="streakDay">1</span> of your streak!</p>
+            <div class="rewards">
+                <p>Today's rewards:</p>
+                <ul id="bonusRewards">
+                    <li>100 Coins</li>
+                    <li>Full Energy Refill</li>
+                </ul>
+            </div>
+            <button class="btn" id="claimDailyBonusBtn">Claim Rewards</button>
+        </div>
+    </div>
+    
+    <div class="animations" id="animations"></div><!-- ... (existing body content remains the same) ... -->
+    </div>
+
+    <!-- ... (existing modals remain the same) ... -->
+
+    <script>
+        // Modified Game State
+        const gameState = {
+            coins: 100,
+            level: 1,
+            energy: 10,
+            maxEnergy: 10,
+            plots: 4,
+            selectedCrop: null,
+            farm: [],
+            growthSpeedMultiplier: 1,
+            lastDailyBonus: null,
+            streak: 1
+        };
+        
+        // DOM Elements
+        const coinsElement = document.getElementById('coins');
+        const levelElement = document.getElementById('level');
+        const energyElement = document.getElementById('energy');
+        const farmElement = document.getElementById('farm');
+        const unlockPlotBtn = document.getElementById('unlockPlotBtn');
+        const upgradeLevelBtn = document.getElementById('upgradeLevelBtn');
+        const refreshEnergyBtn = document.getElementById('refreshEnergyBtn');
+        const levelUpModal = document.getElementById('levelUpModal');
+        const newLevelElement = document.getElementById('newLevel');
+        const claimLevelRewardBtn = document.getElementById('claimLevelRewardBtn');
+        const dailyBonusElement = document.getElementById('dailyBonus');
+        const dailyBonusModal = document.getElementById('dailyBonusModal');
+        const streakDayElement = document.getElementById('streakDay');
+        const claimDailyBonusBtn = document.getElementById('claimDailyBonusBtn');
+        const animationsContainer = document.getElementById('animations');
+        // Initialize farm
+function initializeFarm() {
+    farmElement.innerHTML = '';
+    gameState.farm = [];
+    
+    // Create plots
+    for (let i = 0; i < gameState.plots; i++) {
+        const plot = {
+            id: i,
+            status: 'empty',
+            crop: null,
+            plantTime: null,
+            harvestTime: null,
+            element: null
+        };
+        
+        gameState.farm.push(plot);
+        
+        const plotElement = document.createElement('div');
+        plotElement.className = 'plot';
+        plotElement.dataset.id = i;
+        plotElement.addEventListener('click', () => handlePlotClick(i));
+        
+        plotElement.innerHTML = `
+            <div class="crop-icon">🟤</div>
+            <div class="crop-timer"></div>
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+        `;
+        
+        plot.element = plotElement;
+        farmElement.appendChild(plotElement);
+    }
+    
+    // Add empty plots to show locked plots
+    for (let i = gameState.plots; i < 9; i++) {
+        const lockedPlot = document.createElement('div');
+        lockedPlot.className = 'plot';
+        lockedPlot.style.opacity = '0.5';
+        lockedPlot.innerHTML = `
+            <div class="crop-icon">🔒</div>
+        `;
+        farmElement.appendChild(lockedPlot);
+    }
+    
+    updateUI();
+}
+        // Modified Initialize Game Function
+        // Initialize game
+function initializeGame() {
+    // Show initial pop-up
+    document.getElementById('initialPopup').style.display = 'block';
+
+    // Set up shop items
+    document.querySelectorAll('.shop-item').forEach(item => {
+        item.addEventListener('click', () => {
+            // Only select if not disabled
+            if (!item.classList.contains('disabled')) {
+                // Remove selected from all items
+                document.querySelectorAll('.shop-item').forEach(i => i.style.border = 'none');
+                
+                // Select this item
+                item.style.border = '2px solid blue';
+                gameState.selectedCrop = item.dataset.crop;
+            }
+        });
+    });
+    
+    // Set up buttons
+    unlockPlotBtn.addEventListener('click', unlockNewPlot);
+    upgradeLevelBtn.addEventListener('click', upgradeLevel);
+    refreshEnergyBtn.addEventListener('click', refreshEnergy);
+    claimLevelRewardBtn.addEventListener('click', claimLevelRewards);
+    dailyBonusElement.addEventListener('click', showDailyBonus);
+    claimDailyBonusBtn.addEventListener('click', claimDailyBonus);
+    
+    // Close modals when clicking on X
+    document.querySelectorAll('.close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', () => {
+            levelUpModal.style.display = 'none';
+            dailyBonusModal.style.display = 'none';
+            document.getElementById('initialPopup').style.display = 'none';
+        });
+    });
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', (event) => {
+        if (event.target === levelUpModal) {
+            levelUpModal.style.display = 'none';
+        }
+        if (event.target === dailyBonusModal) {
+            dailyBonusModal.style.display = 'none';
+        }
+        if (event.target === document.getElementById('initialPopup')) {
+            document.getElementById('initialPopup').style.display = 'none';
+        }
+    });
+    
+    // Initialize farm
+    initializeFarm();
+    
+    // Auto-regenerate energy
+    setInterval(() => {
+        if (gameState.energy < gameState.maxEnergy) {
+            gameState.energy += 1;
+            updateUI();
+        }
+    }, 60000); // 1 minute
+    
+    // Load game state from local storage
+    loadGame();
+    
+    // Save game state periodically
+    setInterval(saveGame, 10000); // 10 seconds
+}
+        
+        // Handle plot click
+        function handlePlotClick(plotId) {
+            const plot = gameState.farm[plotId];
+            
+            if (plot.status === 'empty') {
+                // Plant if crop is selected
+                if (gameState.selectedCrop) {
+                    plantCrop(plotId);
+                }
+            } else if (plot.status === 'ready') {
+                // Harvest if crop is ready
+                harvestCrop(plotId);
+            }
+        }
+        
+        // Plant crop
+        function plantCrop(plotId) {
+            const plot = gameState.farm[plotId];
+            const shopItem = document.querySelector(`.shop-item[data-crop="${gameState.selectedCrop}"]`);
+            const cropCost = parseInt(shopItem.dataset.cost);
+            const growthTime = parseInt(shopItem.dataset.growth);
+            
+            // Check if enough coins and energy
+            if (gameState.coins >= cropCost && gameState.energy > 0) {
+                // Reduce coins and energy
+                gameState.coins -= cropCost;
+                gameState.energy -= 1;
+                
+                // Update plot
+                plot.status = 'planted';
+                plot.crop = gameState.selectedCrop;
+                plot.plantTime = Date.now();
+                plot.harvestTime = Date.now() + (growthTime * 1000 / gameState.growthSpeedMultiplier);
+                
+                // Update UI
+                updatePlot(plotId);
+                updateUI();
+                
+                // Start growth timer
+                const interval = setInterval(() => {
+                    const now = Date.now();
+                    const progress = (now - plot.plantTime) / (plot.harvestTime - plot.plantTime);
+                    
+                    if (plot.element) {
+                        const progressBar = plot.element.querySelector('.progress-bar');
+                        progressBar.style.width = `${Math.min(100, progress * 100)}%`;
+                        
+                        const timeLeft = Math.max(0, Math.ceil((plot.harvestTime - now) / 1000));
+                        plot.element.querySelector('.crop-timer').textContent = `${timeLeft}s`;
+                    }
+                    
+                    if (now >= plot.harvestTime) {
+                        clearInterval(interval);
+                        plot.status = 'ready';
+                        updatePlot(plotId);
+                    }
+                }, 100);
+            }
+        }
+        
+        // Harvest crop
+        function harvestCrop(plotId) {
+            const plot = gameState.farm[plotId];
+            const shopItem = document.querySelector(`.shop-item[data-crop="${plot.crop}"]`);
+            const reward = parseInt(shopItem.dataset.reward);
+            
+            // Add coins
+            gameState.coins += reward;
+            
+            // Show coin animation
+            createCoinAnimation(plot.element, reward);
+            
+            // Reset plot
+            plot.status = 'empty';
+            plot.crop = null;
+            plot.plantTime = null;
+            plot.harvestTime = null;
+            
+            // Update UI
+            updatePlot(plotId);
+            updateUI();
+        }
+        
+        // Create coin animation
+        function createCoinAnimation(element, amount) {
+            const rect = element.getBoundingClientRect();
+            const animation = document.createElement('div');
+            animation.className = 'coin-animation';
+            animation.textContent = `+${amount} 💰`;
+            animation.style.left = `${rect.left + rect.width / 2}px`;
+            animation.style.top = `${rect.top + rect.height / 2}px`;
+            
+            animationsContainer.appendChild(animation);
+            
+            setTimeout(() => {
+                animation.remove();
+            }, 1000);
+        }
+        
+        // Update plot UI
+        function updatePlot(plotId) {
+            const plot = gameState.farm[plotId];
+            
+            if (plot.element) {
+                // Update class
+                plot.element.className = `plot ${plot.status}`;
+                
+                // Update icon
+                const cropIcon = plot.element.querySelector('.crop-icon');
+                if (plot.status === 'empty') {
+                    cropIcon.textContent = '🟤';
+                } else if (plot.status === 'planted') {
+                    switch (plot.crop) {
+                        case 'carrot':
+                            cropIcon.textContent = '🌱';
+                            break;
+                        case 'tomato':
+                            cropIcon.textContent = '🌱';
+                            break;
+                        case 'corn':
+                            cropIcon.textContent = '🌱';
+                            break;
+                    }
+                } else if (plot.status === 'ready') {
+                    switch (plot.crop) {
+                        case 'carrot':
+                            cropIcon.textContent = '🥕';
+                            break;
+                        case 'tomato':
+                            cropIcon.textContent = '🍅';
+                            break;
+                        case 'corn':
+                            cropIcon.textContent = '🌽';
+                            break;
+                    }
+                }
+                
+                // Update timer visibility
+                const timer = plot.element.querySelector('.crop-timer');
+                timer.style.display = plot.status === 'planted' ? 'block' : 'none';
+                
+                // Update progress bar
+                const progressContainer = plot.element.querySelector('.progress-container');
+                const progressBar = plot.element.querySelector('.progress-bar');
+                
+                progressContainer.style.display = plot.status === 'planted' ? 'block' : 'none';
+                progressBar.style.width = plot.status === 'planted' ? '0%' : '0%';
+            }
+        }
+        
+        // Update UI
+        function updateUI() {
+            coinsElement.textContent = gameState.coins;
+            levelElement.textContent = gameState.level;
+            energyElement.textContent = `${gameState.energy}/${gameState.maxEnergy}`;
+            
+            // Update shop items
+            document.querySelectorAll('.shop-item').forEach(item => {
+                const cost = parseInt(item.dataset.cost);
+                
+                if (gameState.coins < cost || gameState.energy <= 0) {
+                    item.classList.add('disabled');
+                } else {
+                    item.classList.remove('disabled');
+                }
+            });
+            
+            // Update buttons
+            unlockPlotBtn.disabled = gameState.coins < 50 || gameState.plots >= 9;
+            unlockPlotBtn.textContent = gameState.plots >= 9 ? 'All Plots Unlocked' : `Unlock New Plot (50 💰)`;
+            
+            upgradeLevelBtn.disabled = gameState.coins < 100;
+            refreshEnergyBtn.disabled = gameState.coins < 20 || gameState.energy >= gameState.maxEnergy;
+            
+            // Show/hide daily bonus
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            if (!gameState.lastDailyBonus || new Date(gameState.lastDailyBonus) < today) {
+                dailyBonusElement.style.display = 'block';
+            } else {
+                dailyBonusElement.style.display = 'none';
+            }
+        }
+        
+        // Unlock new plot
+        function unlockNewPlot() {
+            if (gameState.coins >= 50 && gameState.plots < 9) {
+                gameState.coins -= 50;
+                gameState.plots += 1;
+                initializeFarm();
+                updateUI();
+            }
+        }
+        
+        // Upgrade level
+        // Upgrade level
+function upgradeLevel() {
+    if (gameState.coins >= 100) {
+        gameState.coins -= 100;
+        gameState.level += 1;
+        
+        // Check for level 10 redirect
+        if (gameState.level >= 10) {
+            window.location.href = 'https://mattg5022.github.io/bday-gift/';
+            return;
+        }
+        
+        // Show level up modal
+        newLevelElement.textContent = gameState.level;
+        levelUpModal.style.display = 'block';
+    }
+}
+        
+        // Claim level rewards
+        function claimLevelRewards() {
+            // Apply rewards
+            gameState.coins += 50;
+            gameState.maxEnergy += 2;
+            gameState.energy = gameState.maxEnergy;
+            gameState.growthSpeedMultiplier += 0.2;
+            
+            // Close modal
+            levelUpModal.style.display = 'none';
+            
+            // Update UI
+            updateUI();
+        }
+        
+        // Refresh energy
+        function refreshEnergy() {
+            if (gameState.coins >= 20 && gameState.energy < gameState.maxEnergy) {
+                gameState.coins -= 20;
+                gameState.energy = gameState.maxEnergy;
+                updateUI();
+            }
+        }
+        
+        // Show daily bonus
+        function showDailyBonus() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            if (!gameState.lastDailyBonus || new Date(gameState.lastDailyBonus) < today) {
+                // Check streak
+                if (gameState.lastDailyBonus) {
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    
+                    if (new Date(gameState.lastDailyBonus).toDateString() === yesterday.toDateString()) {
+                        gameState.streak += 1;
+                    } else {
+                        gameState.streak = 1;
+                    }
+                }
+                
+                // Update modal
+                streakDayElement.textContent = gameState.streak;
+                
+                // Update rewards based on streak
+                const bonusRewardsElement = document.getElementById('bonusRewards');
+                bonusRewardsElement.innerHTML = '';
+                
+                // Base rewards
+                let coinReward = 100;
+                
+                // Streak bonus
+                if (gameState.streak > 1) {
+                    coinReward += (gameState.streak - 1) * 50;
+                }
+                
+                // Add rewards to list
+                const coinRewardItem = document.createElement('li');
+                coinRewardItem.textContent = `${coinReward} Coins`;
+                bonusRewardsElement.appendChild(coinRewardItem);
+                
+                const energyRewardItem = document.createElement('li');
+                energyRewardItem.textContent = 'Full Energy Refill';
+                bonusRewardsElement.appendChild(energyRewardItem);
+                
+                // Show modal
+                dailyBonusModal.style.display = 'block';
+            }
+        }
+        
+        // Claim daily bonus
+        function claimDailyBonus() {
+            // Calculate rewards based on streak
+            let coinReward = 100;
+            
+            // Streak bonus
+            if (gameState.streak > 1) {
+                coinReward += (gameState.streak - 1) * 50;
+            }
+            
+            // Apply rewards
+            gameState.coins += coinReward;
+            gameState.energy = gameState.maxEnergy;
+            
+            // Update last bonus time
+            gameState.lastDailyBonus = new Date().toISOString();
+            
+            // Close modal
+            dailyBonusModal.style.display = 'none';
+            
+            // Hide daily bonus button
+            dailyBonusElement.style.display = 'none';
+            
+            // Update UI
+            updateUI();
+        }
+        
+        // Initialize game
+    
+           
+        
+        // Save game state
+        function saveGame() {
+            const saveData = JSON.stringify({
+                coins: gameState.coins,
+                level: gameState.level,
+                energy: gameState.energy,
+                maxEnergy: gameState.maxEnergy,
+                plots: gameState.plots,
+                growthSpeedMultiplier: gameState.growthSpeedMultiplier,
+                lastDailyBonus: gameState.lastDailyBonus,
+                streak: gameState.streak
+            });
+            
+            localStorage.setItem('farmGame', saveData);
+        }
+        
+        // Load game state
+        // Load game state
+function loadGame() {
+    const saveData = localStorage.getItem('farmGame');
+    
+    if (saveData) {
+        const data = JSON.parse(saveData);
+        
+        gameState.coins = data.coins || 100;
+        gameState.level = data.level || 1;
+        gameState.energy = data.energy || 10;
+        gameState.maxEnergy = data.maxEnergy || 10;
+        gameState.plots = data.plots || 4;
+        gameState.growthSpeedMultiplier = data.growthSpeedMultiplier || 1;
+        gameState.lastDailyBonus = data.lastDailyBonus || null;
+        gameState.streak = data.streak || 1;
+        
+        // Check for existing level 10
+        if (gameState.level >= 10) {
+            window.location.href = 'https://mattg5022.github.io/bday-gift/';
+            return;
+        }
+        
+        initializeFarm();
+        updateUI();
+    }
+}
+        // Modified Upgrade Level Function
+        function upgradeLevel() {
+            if (gameState.coins >= 100) {
+                gameState.coins -= 100;
+                gameState.level += 1;
+
+                // Check for level 10 redirect
+                if (gameState.level >= 10) {
+                    window.location.href = 'https://mattg5022.github.io/bday-gift/';
+                    return;
+                }
+
+                // ... (rest of existing upgradeLevel code remains the same) ...
+            }
+        }
+
+        // Modified Load Game Function
+        function loadGame() {
+            const saveData = localStorage.getItem('farmGame');
+            
+            if (saveData) {
+                const data = JSON.parse(saveData);
+                
+                gameState.level = data.level || 1;
+
+                // Check for existing level 10
+                if (gameState.level >= 10) {
+                    window.location.href = 'https://mattg5022.github.io/bday-gift/';
+                    return;
+                }
+
+                // ... (rest of existing loadGame code remains the same) ...
+            }
+        }
+        // Start the game when page loads
+window.onload = function() {
+    initializeGame();
+};
+        // ... (rest of existing code remains the same) ...
+    </script>
+</body>
+</html>
