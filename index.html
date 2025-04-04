@@ -886,9 +886,8 @@ function loadGame() {
             }
         }
         // Start the game when page loads
-window.onload = function() {
-    initializeGame();
-};
+// Start the game when page loads
+window.addEventListener('DOMContentLoaded', initializeGame);
         // ... (rest of existing code remains the same) ...
     </script>
 </body>
