@@ -149,6 +149,14 @@
             background-color: #FF7F00;
         }
         
+        .reset-btn {
+            background-color: #f44336;
+        }
+        
+        .reset-btn:hover {
+            background-color: #d32f2f;
+        }
+        
         .modal {
             display: none;
             position: fixed;
@@ -240,6 +248,14 @@
                 opacity: 0;
             }
         }
+        
+        .passive-income {
+            background-color: #9C27B0;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -258,6 +274,11 @@
 
     <div class="container">
         <h1>Farmland Game Clone</h1>
+        
+        <div class="passive-income">
+            <p>Passive Income: +10 coins every 10 minutes!</p>
+            <p id="nextPassiveIncome">Next income in: 10:00</p>
+        </div>
         
         <div class="stats">
             <div class="stat">
@@ -310,6 +331,7 @@
         <button class="btn upgrade-btn" id="unlockPlotBtn">Unlock New Plot (50 💰)</button>
         <button class="btn upgrade-btn" id="upgradeLevelBtn">Upgrade Level (100 💰)</button>
         <button class="btn" id="refreshEnergyBtn">Refresh Energy (20 💰)</button>
+        <button class="btn reset-btn" id="resetGameBtn">Reset Game</button>
     </div>
     
     <div id="levelUpModal" class="modal">
@@ -343,6 +365,16 @@
         </div>
     </div>
     
+    <div id="resetConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Reset Game</h2>
+            <p>Are you sure you want to reset your game? All progress will be lost!</p>
+            <button class="btn reset-btn" id="confirmResetBtn">Yes, Reset</button>
+            <button class="btn" id="cancelResetBtn">Cancel</button>
+        </div>
+    </div>
+    
     <div class="animations" id="animations"></div>
 
     <script>
@@ -357,7 +389,9 @@
             growthSpeedMultiplier: 1,
             lastDailyBonus: null,
             streak: 1,
-            musicPlaying: false
+            musicPlaying: false,
+            lastPassiveIncome: Date.now(),
+            nextPassiveIncome: Date.now() + 600000 // 10 minutes in milliseconds
         };
         
         // DOM Elements
@@ -368,6 +402,9 @@
         const unlockPlotBtn = document.getElementById('unlockPlotBtn');
         const upgradeLevelBtn = document.getElementById('upgradeLevelBtn');
         const refreshEnergyBtn = document.getElementById('refreshEnergyBtn');
+        const resetGameBtn = document.getElementById('resetGameBtn');
+        const confirmResetBtn = document.getElementById('confirmResetBtn');
+        const cancelResetBtn = document.getElementById('cancelResetBtn');
         const levelUpModal = document.getElementById('levelUpModal');
         const newLevelElement = document.getElementById('newLevel');
         const claimLevelRewardBtn = document.getElementById('claimLevelRewardBtn');
@@ -377,6 +414,8 @@
         const claimDailyBonusBtn = document.getElementById('claimDailyBonusBtn');
         const animationsContainer = document.getElementById('animations');
         const bgMusic = document.getElementById('bgMusic');
+        const resetConfirmModal = document.getElementById('resetConfirmModal');
+        const nextPassiveIncomeElement = document.getElementById('nextPassiveIncome');
         
         // Initialize farm
         function initializeFarm() {
@@ -467,6 +506,9 @@
             unlockPlotBtn.addEventListener('click', unlockNewPlot);
             upgradeLevelBtn.addEventListener('click', upgradeLevel);
             refreshEnergyBtn.addEventListener('click', refreshEnergy);
+            resetGameBtn.addEventListener('click', () => resetConfirmModal.style.display = 'block');
+            confirmResetBtn.addEventListener('click', resetGame);
+            cancelResetBtn.addEventListener('click', () => resetConfirmModal.style.display = 'none');
             claimLevelRewardBtn.addEventListener('click', claimLevelRewards);
             dailyBonusElement.addEventListener('click', showDailyBonus);
             claimDailyBonusBtn.addEventListener('click', claimDailyBonus);
@@ -477,6 +519,7 @@
                     levelUpModal.style.display = 'none';
                     dailyBonusModal.style.display = 'none';
                     document.getElementById('initialPopup').style.display = 'none';
+                    resetConfirmModal.style.display = 'none';
                 });
             });
             
@@ -491,6 +534,9 @@
                 if (event.target === document.getElementById('initialPopup')) {
                     document.getElementById('initialPopup').style.display = 'none';
                 }
+                if (event.target === resetConfirmModal) {
+                    resetConfirmModal.style.display = 'none';
+                }
             });
             
             // Initialize farm
@@ -504,11 +550,34 @@
                 }
             }, 60000); // 1 minute
             
+            // Passive income timer
+            setInterval(updatePassiveIncomeTimer, 1000);
+            
+            // Passive income
+            setInterval(() => {
+                gameState.coins += 10;
+                gameState.lastPassiveIncome = Date.now();
+                gameState.nextPassiveIncome = Date.now() + 600000; // 10 minutes
+                updateUI();
+                
+                // Show notification
+                createCoinAnimation(document.querySelector('.passive-income'), 10);
+            }, 600000); // 10 minutes
+            
             // Load game state from local storage
             loadGame();
             
             // Save game state periodically
             setInterval(saveGame, 10000); // 10 seconds
+        }
+        
+        // Update passive income timer
+        function updatePassiveIncomeTimer() {
+            const timeLeft = Math.max(0, gameState.nextPassiveIncome - Date.now());
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            
+            nextPassiveIncomeElement.textContent = `Next income in: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
         
         // Handle plot click
@@ -822,6 +891,35 @@
             updateUI();
         }
         
+        // Reset game
+        function resetGame() {
+            if (confirm("Are you sure you want to reset your game? All progress will be lost!")) {
+                // Reset game state
+                gameState.coins = 100;
+                gameState.level = 1;
+                gameState.energy = 10;
+                gameState.maxEnergy = 10;
+                gameState.plots = 4;
+                gameState.selectedCrop = null;
+                gameState.growthSpeedMultiplier = 1;
+                gameState.lastDailyBonus = null;
+                gameState.streak = 1;
+                gameState.musicPlaying = false;
+                gameState.lastPassiveIncome = Date.now();
+                gameState.nextPassiveIncome = Date.now() + 600000;
+                
+                // Clear saved game
+                localStorage.removeItem('farmGame');
+                
+                // Reinitialize farm
+                initializeFarm();
+                updateUI();
+                
+                // Close modal
+                resetConfirmModal.style.display = 'none';
+            }
+        }
+        
         // Save game state
         function saveGame() {
             const saveData = JSON.stringify({
@@ -832,7 +930,9 @@
                 plots: gameState.plots,
                 growthSpeedMultiplier: gameState.growthSpeedMultiplier,
                 lastDailyBonus: gameState.lastDailyBonus,
-                streak: gameState.streak
+                streak: gameState.streak,
+                lastPassiveIncome: gameState.lastPassiveIncome,
+                nextPassiveIncome: gameState.nextPassiveIncome
             });
             
             localStorage.setItem('farmGame', saveData);
@@ -853,6 +953,8 @@
                 gameState.growthSpeedMultiplier = data.growthSpeedMultiplier || 1;
                 gameState.lastDailyBonus = data.lastDailyBonus || null;
                 gameState.streak = data.streak || 1;
+                gameState.lastPassiveIncome = data.lastPassiveIncome || Date.now();
+                gameState.nextPassiveIncome = data.nextPassiveIncome || Date.now() + 600000;
                 
                 // Check for existing level 10
                 if (gameState.level >= 10) {
